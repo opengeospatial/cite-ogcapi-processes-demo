@@ -1,0 +1,824 @@
+openapi: 3.0.2
+info:
+  title: Fachprozess implementing the OGC API - Processes
+  version: 1.0.0
+  description: |-
+    WARNING - THIS IS WORK IN PROGRESS
+  contact:
+    name: Benjamin Pross
+    email: b.pross@52north.org
+  license:
+    name: TBA
+servers:
+- url: http://localhost:8080/
+paths:
+  /:
+    get:
+      summary: landing page of this API
+      description: >-
+        The landing page provides links to the API definition, the Conformance
+        statements and the metadata about the processes offered by this service.
+      operationId: getLandingPage
+      tags:
+        - Capabilities
+      responses:
+        '200':
+          description: links to the API capabilities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/landingPage'
+            text/html:
+              schema:
+                type: string
+  /conformance:
+    get:
+      summary: information about standards that this API conforms to
+      description: >-
+        list all requirements classes specified in a standard (e.g., WPS REST/JSON Binding
+        Part 1: Core) that the server conforms to
+      operationId: getRequirementsClasses
+      tags:
+        - Conformance
+      responses:
+        '200':
+          description: the URIs of all requirements classes supported by the server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/confClasses'
+        default:
+          description: An error occured.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/exception'
+  /processes:
+    get:
+      summary: retrieve available processes
+      description: >-
+        TODO
+      operationId: getProcesses
+      tags:
+        - Processes
+      responses:
+        '200':
+          description: >-
+            Information about the available processes
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/processList'
+        default:
+          description: An error occured.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/exception'
+  /jobs:
+    get:
+      summary: retrieve the list of jobs for a process.
+      operationId: getJobList
+      tags:
+        - JobList
+      responses:
+        '200':
+          description: A list of jobs for this process.
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/jobList'
+        '404':
+          description: 'The process with id {id} does not exist.'
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/exception'
+        default:
+          description: An error occured.
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/exception'
+    post: 
+      summary: execute a process.
+      operationId: execute
+      tags:
+        - Execute
+      requestBody:
+        description: Mandatory execute request JSON
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/execute'
+                - properties:
+                    id: 
+                      enum:
+                        - bohrung
+                    inputs:
+                      additionalProperties: false
+                      properties:
+                        geometries:
+                          type: object
+                          properties:
+                             format:
+                               properties:
+                                 mediaType:
+                                   type: string
+                                   enum:
+                                    - "application/geo+json"
+                             value: 
+                              oneOf:
+                                - $ref: 'https://raw.githubusercontent.com/ngageoint/mage-server/master/docs/geojson.yaml#/definitions/point'
+                                - $ref: 'https://raw.githubusercontent.com/ngageoint/mage-server/master/docs/geojson.yaml#/definitions/multiPoint'
+                    outputs:
+                      additionalProperties: false
+                      properties:
+                        betroffene_flurstuecke:
+                          type: object
+                          properties:
+                             format:
+                               properties:
+                                 mediaType:
+                                   type: string
+                                   enum:
+                                    - "application/geo+json"
+                             transmissionMode:
+                               type: string
+                               enum:
+                                 - value
+                    mode:
+                      type: string
+                      enum:
+                        - sync
+                    response:
+                      type: string
+                      enum:
+                        - raw
+      responses:
+        '200':
+           description: Result of a synchronous execution.
+           content:
+              application/json:
+                schema:
+                    $ref: "#/components/schemas/exception"
+              application/geo+json:
+                schema:
+                    $ref: "https://raw.githubusercontent.com/ngageoint/mage-server/master/docs/geojson.yaml"
+        '404':
+          description: 'The process with id {id} does not exist.'
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/exception'
+        default:
+          description: An error occured.
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/exception'
+  /jobs/{jobID}:
+    get:
+      summary: retrieve the status of a job
+      operationId: getStatus
+      tags:
+        - Status
+      parameters:
+          - in: path
+            name: jobID
+            description: The id of a job
+            required: true
+            schema:
+              type: string
+      responses:
+        '200':
+          description: The status of a job.
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/statusInfo'
+        '404':
+          description: 'The process with id {id} or the job with id {jobID} does not exist.'
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/exception'
+        default:
+          description: An error occured.
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/exception'
+  /jobs/{jobID}/results:
+    get:
+      summary: retrieve the result(s) of a job
+      operationId: getResult
+      tags:
+        - Result
+      parameters:
+          - in: path
+            name: jobID
+            description: The id of a job
+            required: true
+            schema:
+              type: string
+      responses:
+        '200':
+          description: The result of a job.
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/result'
+        '404':
+          description: 'The process with id {id} or the job with id {jobID} does not exist.'
+          content:
+            application/json:
+                  schema:
+                    $ref: '#/components/schemas/exception'
+        '500':
+          description: 'The job execution failed due to a internal server error.'
+          content:
+            application/json:
+                  schema:
+                    $ref: '#/components/schemas/exception'
+        default:
+          description: An error occured.
+          content:
+            application/json:
+                  schema:
+                    $ref: '#/components/schemas/exception'
+  /processes/bohrung:
+    get:
+      summary: retrieve a process description
+      description: >-
+        Describes the bohrung process.
+      operationId: getBohrungProcessDescription
+      tags:
+        - ProcessDescription
+      responses:
+        200:
+          description: >-
+            Description of the bohrung process.
+          content:
+            application/json:
+              schema:
+                allOf:
+                 - $ref: '#/components/schemas/process'
+                 - type: object
+                   properties:
+                     id:
+                       type: string
+                       enum:
+                       - bohrung
+                     title:
+                       type: string
+                       enum:
+                       - bohrung
+                     description:
+                       type: string
+                       enum:
+                       - bohrung
+                     version:
+                       type: string
+                       enum:
+                         - 1.0.0
+                     jobControlOptions:
+                       type: string
+                       enum:
+                         - sync-execute
+                     outputTransmission:
+                       type: string
+                       enum:
+                         - value
+                         - reference
+                     links:
+                       type: array
+                       items:
+                           type: object
+                           properties:
+                             href: 
+                               type: string
+                               enum:
+                                - http://localhost:8080/jobs
+                             rel: 
+                               type: string
+                               enum:
+                                - execute
+                             title: 
+                               type: string
+                               enum:
+                                - execute endpoint
+                     inputs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              enum:
+                                - geometries
+                            title:
+                              type: string
+                              enum:
+                                - geometries
+                            description:
+                              type: string
+                              enum:
+                                - geometries
+                            input:
+                              type: object
+                              properties:
+                                format:
+                                  type: object
+                                  properties:
+                                    mediaType:
+                                      type: string
+                                      enum:
+                                       - application/geo+json
+                                    default:
+                                      type: boolean
+                                      default: false
+                     outputs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              enum:
+                                - betroffene_flurstuecke
+                            title:
+                              type: string
+                              enum:
+                                - betroffene_flurstuecke
+                            description:
+                              type: string
+                              enum:
+                                - betroffene_flurstuecke
+                            output:
+                              type: object
+                              properties:
+                                format:
+                                  type: object
+                                  properties:
+                                    mediaType:
+                                      type: string
+                                      enum:
+                                       - application/geo+json
+                                    default:
+                                      type: boolean
+                                      default: false
+        404:
+          $ref: "#/components/schemas/exception"
+components:
+    schemas:
+        additionalParameter:
+          type: object
+          required:
+             - name
+             - value
+          properties:
+             name:
+                type: string
+             value:
+                type: array
+                items:
+                   oneOf:
+                      - type: string
+                      - type: number
+                      - type: integer
+                      - type: array
+                        items: {}
+                      - type: object
+        allowedValues:
+          type: array
+          items:
+             oneOf:
+                - type: string
+                - $ref: "#/components/schemas/range"
+        anyValue:
+          type: object
+          properties:
+             anyValue:
+                type: boolean
+                default: true
+        boundingBoxData:
+          type: object
+          required:
+             - bbox
+          properties:
+             crs:
+                type: string
+                format: uri
+             bbox:
+                type: array
+                minItems: 4
+                maxItems: 6
+                items:
+                   type: number
+        boundingBoxDataType:
+          type: object
+          required:
+             - supportedCRS
+          properties:
+             supportedCRS:
+                type: array
+                items:
+                   $ref: "#/components/schemas/supportedCRS"
+        complexDataType:
+          type: object
+          required:
+             - formats
+          properties:
+             formats:
+                type: array
+                items:
+                   $ref: "#/components/schemas/formatDescription"
+        confClasses:
+          type: object
+          required:
+            - conformsTo
+          properties:
+            conformsTo:
+              type: array
+              items:
+                type: string
+                example: "http://www.opengis.net/spec/ogcapi_processes/1.0/req/core"
+        descriptionType:
+          type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+            description:
+              type: string
+            keywords:
+              type: array
+              items:
+                type: string
+            metadata:
+              type: array
+              items:
+                $ref: "#/components/schemas/metadata"
+            additionalParameters:
+              allOf:
+                - $ref: "#/components/schemas/metadata"
+                - type: object
+                  properties:
+                    parameters:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/additionalParameter"
+        exception:
+          type: object
+          required:
+            - code
+          properties:
+            code:
+              type: string
+            description:
+              type: string
+        execute:
+          type: object
+          required:
+            - id
+            - outputs
+            - mode
+            - response
+          properties:
+            id:
+              type: string
+            inputs:
+                $ref: "#/components/schemas/input"
+            outputs:
+                $ref: "#/components/schemas/output"
+            mode:
+              type: string
+              enum:
+                - sync
+                - async
+                - auto
+            response:
+              type: string
+              enum:
+                - raw
+                - document
+            subscriber:
+              $ref: "#/components/schemas/subscriber"
+        format:
+          type: object
+          required:
+             - mediaType
+          properties:
+             mediaType:
+                type: string
+             schema:
+                type: string
+             encoding:
+                type: string
+        formatDescription:
+          allOf:
+             - $ref: "#/components/schemas/format"
+             - type: object
+               properties:
+                  maximumMegabytes:
+                     type: integer
+                  default:
+                     type: boolean
+                     default: false
+        inlineOrRefData:
+          type: object
+          properties:
+            dataType:
+              $ref: "#/components/schemas/nameReferenceType"
+            uom:
+              $ref: "#/components/schemas/nameReferenceType"
+            format:
+              $ref: "#/components/schemas/format"
+            href:
+              type: string
+              format: uri
+            value:
+              oneOf:
+                - type: string
+                - type: number
+                - type: boolean
+                - type: object
+          oneOf:
+            - required: [href]
+            - required: [value]
+        input:
+          additionalProperties:
+            oneOf:
+              - $ref: "#/components/schemas/inlineOrRefData"
+              - $ref: "#/components/schemas/boundingBoxData"
+              - $ref: "#/components/schemas/input"
+              - type: array
+                items:
+                  oneOf:
+                    - $ref: "#/components/schemas/inlineOrRefData"
+                    - $ref: "#/components/schemas/boundingBoxData"
+                    - $ref: "#/components/schemas/input"
+        inputDescription:
+          allOf:
+            - $ref: "#/components/schemas/descriptionType"
+            - type: object
+              properties:
+                input:
+                  oneOf:
+                    - $ref: "#/components/schemas/complexDataType"
+                    - $ref: "#/components/schemas/literalDataType"
+                    - $ref: "#/components/schemas/boundingBoxDataType"
+                minOccurs:
+                  type: integer
+                maxOccurs:
+                  oneOf:
+                    - type: integer
+                    - type: string
+                      enum:
+                        - unbounded
+                observedProperty:
+                  $ref: "#/components/schemas/observedProperty"
+        jobControlOptions:
+          type: string
+          enum:
+            - sync-execute
+            - async-execute
+        jobList:
+          type: array
+          items:
+            $ref: "#/components/schemas/statusInfo"
+        landingPage:
+          type: object
+          required:
+            - links
+          properties:
+            title:
+              type: string
+              example: Example processing server
+            description:
+              type: string
+              example: Example server implementing the OGC API - Processes 1.0
+            links:
+              type: array
+              items:
+                $ref: link
+        link:
+          type: object
+          required:
+            - href
+          properties:
+            href:
+              type: string
+            rel:
+              type: string
+            type:
+              type: string
+              example: application/json
+            hreflang:
+              type: string
+              example: en
+            title:
+              type: string
+        literalDataDomain:
+          type: object
+          properties:
+            valueDefinition:
+              oneOf:
+                - $ref: "#/components/schemas/allowedValues"
+                - $ref: "#/components/schemas/anyValue"
+                - $ref: "#/components/schemas/valuesReference"
+            defaultValue:
+              type: string
+            dataType:
+              $ref: "#/components/schemas/nameReferenceType"
+            uom:
+              $ref: "#/components/schemas/nameReferenceType"
+        literalDataType:
+          type: object
+          required:
+            - literalDataDomains
+          properties:
+            literalDataDomains:
+              type: array
+              items:
+                $ref: "#/components/schemas/literalDataDomain"
+        metadata:
+          type: object
+          properties:
+             title:
+                type: string
+             role:
+                type: string
+             href:
+                type: string
+        nameReferenceType:
+          type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+            reference:
+              type: string
+              format: uri
+        observedProperty:
+          properties:
+            name:
+              type: string
+            uri:
+              type: string
+              format: uri
+            description:
+              type: string
+        output:
+          additionalProperties:
+             type: object
+             properties:
+                format:
+                   $ref: "#/components/schemas/format"
+                transmissionMode:
+                   $ref: "#/components/schemas/transmissionMode"
+        outputDescription:
+          allOf:
+            - $ref: "#/components/schemas/descriptionType"
+            - type: object
+              properties:
+                output:
+                  oneOf:
+                    - $ref: "#/components/schemas/complexDataType"
+                    - $ref: "#/components/schemas/literalDataType"
+                    - $ref: "#/components/schemas/boundingBoxDataType"
+                observedProperty:
+                  $ref: "#/components/schemas/observedProperty"
+        process:
+          allOf:
+             - $ref: "#/components/schemas/processSummary"
+             - type: object
+               properties:
+                  inputs:
+                     type: array
+                     items:
+                        $ref: "#/components/schemas/inputDescription"
+                  outputs:
+                     type: array
+                     items:
+                        $ref: "#/components/schemas/outputDescription"
+        processList:
+          type: array
+          items:
+            $ref: "#/components/schemas/processSummary"
+        processSummary:
+          allOf:
+            - $ref: "#/components/schemas/descriptionType"
+            - type: object
+              required:
+                - version
+              properties:
+                version:
+                  type: string
+                jobControlOptions:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/jobControlOptions"
+                outputTransmission:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/transmissionMode"
+                links:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/link"
+        range:
+          type: object
+          properties:
+             minimumValue:
+                type: string
+             maximumValue:
+                type: string
+             spacing:
+                type: string
+             rangeClosure:
+                type: string
+                enum:
+                   - closed
+                   - open
+                   - open-closed
+                   - closed-open
+        result:
+          additionalProperties:
+              oneOf:
+                  - $ref: "#/components/schemas/inlineOrRefData"
+                  - $ref: "#/components/schemas/boundingBoxData"
+                  - type: array
+                    items:
+                        oneOf:
+                            - $ref: "#/components/schemas/inlineOrRefData"
+                            - $ref: "#/components/schemas/boundingBoxData"
+        statusInfo:
+          type: object
+          required:
+             - jobID
+             - status
+          properties:
+             jobID:
+                type: string
+             status:
+                type: string
+                enum:
+                   - accepted
+                   - running
+                   - successful
+                   - failed
+                   - dismissed
+             message:
+                type: string
+             progress:
+                type: integer
+                minimum: 0
+                maximum: 100
+             links:
+                type: array
+                items:
+                   $ref: "#/components/schemas/link"
+        subscriber:
+          description: |-
+            Optional URIs for callbacks for this job.
+          
+            Support for this parameter is not required and the parameter may be
+            removed from the API definition, if conformance class **'callback'**
+            is not listed in the conformance declaration under `/conformance`.
+          type: object
+          required:
+            - successUrl
+          properties:
+            successUri:
+              type: string
+              format: uri
+            inProgressUri:
+              type: string
+              format: uri
+            failedUri:
+              type: string
+              format: uri
+        supportedCRS:
+          type: object
+          properties:
+            crs:
+              type: string
+            default:
+              type: boolean
+              default: false
+        transmissionMode:
+          type: string
+          enum:
+            - value
+            - reference
+        valuesReference:
+          type: string
+          format: uri

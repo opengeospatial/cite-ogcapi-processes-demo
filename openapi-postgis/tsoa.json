@@ -1,0 +1,41 @@
+{
+  "entryFile": "src/app.ts",
+  "noImplicitAdditionalProperties": "throw-on-extras",
+  "controllerPathGlobs": [
+    "src/controller.ts"
+  ],
+  "spec": {
+    "outputDirectory": "build",
+    "specVersion": 3,
+    "specMerging": "recursive",
+    "spec": {
+      "paths": {
+        "/echo": {
+          "get": {
+            "parameters": [
+              {
+                "in": "query",
+                "name": "points",
+                "style": "form",
+                "explode": false,
+                "required": true,
+                "schema": {
+                  "example": "12.962746,50.836531",
+                  "type": "array",
+                  "minItems": 2,
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "routes": {
+    "basePath": "/",
+    "routesDir": "build"
+  }
+}

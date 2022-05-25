@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  database:
+    build: ./database
+    image: cite-ogcapi-processes-demo/database:latest
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DATABASE: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+  
+  code-first-openapi-service: 
+    build: openapi-postgis
+    image: cite-ogcapi-processes-demo/openapi-postgis-service:latest
+    ports:
+      - 4000:4000
+    environment:
+      ECHO_DATABASE_USER: postgres
+      ECHO_DATABASE_HOST: database
+      ECHO_DATABASE_PASSWORD: postgres
+      ECHO_DATABASE_NAME: postgres
+      ECHO_DATABASE_PORT: "5432"
+      GEOMETRY_COLUMN: geom
+      INPUT_CRS: "4326"
+      OUTPUT_CRS: "4326"
+      DATABASE_CRS: "25833"
+      TABLE_NAME: verw_gem_f
+      ATTRIBUTE_COLUMNS: name
+      PORT: "4000"
+
+  proxy:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 8080:80

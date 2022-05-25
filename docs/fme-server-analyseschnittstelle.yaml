@@ -1,0 +1,69 @@
+openapi: 3.0.0
+servers:
+  - description: "Analyse-Schnittstelle"
+    url: https://geobak-geodienste.conterra.de/fmedatastreaming/OAPI/Analyse.fmw
+info:
+  version: 1.0.1
+  title: "Analyse-Schnittstelle: HTTP POST"
+  description: "Über die Analyseschnittstelle kann für ein oder mehrere Grafik-Objekte (Punkt, Li-nie, Polygon, Kreis als Polygon) abgefragt werden können, innerhalb welcher Gebie-te die übergebenen Grafik-Objekte liegen.
+Als „Gebiete“ sind hier verschiedene hauptsächlich flächenhafte Objektarten (z.B. Landkreise/kreisfreie Städte, Flurstücke) zu verstehen."
+#fmetoken token=8f7a0f9ce3af1a654a48b6a1da492f608af0d244" 
+
+security:
+  - ApiKey: []
+paths:
+  /analyse:
+    post:
+      parameters: 
+       - in : query
+         name: spatialtest
+         description: intersect | within | nearestneighbour | valuesatpoint.
+         schema: 
+           type: string
+           enum: [intersect,within,nearestneighbour,valuesatpoint]
+       - in : query
+         name: featuretypes
+         example: verw_gem_f , kat_gemark_f
+         description: "Erlaubte Werte: verw_land_f, verw_kreis_f, verw_gem_f,  kat_gemark_f, kat_flurst_f, umw_wassersch_f, umw_nat2000_f, umw_nat2000_p, umw_schutzgeb_f, geol_hohlraumbas_f, geol_hohlraumuih_f, adressen_p, hoehe_r"
+         schema:
+          type: string
+       - in : query
+         name: count
+         schema:
+          type: number
+         description: Number of nearest neigburs to return.
+       - in: query
+         name: maxdistancetoneighbour
+         schema:
+          type: number
+         description: Maximum distance to neigbourg querried.
+        
+        
+      summary: Server example operation
+      description: >-
+        Über die Analyseschnittstelle kann für ein oder mehrere Grafik-Objekte (Punkt, Li-nie, Polygon, Kreis als Polygon) abgefragt werden können, innerhalb welcher Gebie-te die übergebenen Grafik-Objekte liegen.
+      requestBody:
+       description: "Array von verschiedenen Geometrien (point, line, po-lygon) als ESRI-JSON. Eine Geometry-Beschreibung besteht aus der räumlichen Information (geometry) inklusive Koordinaten-system (spatialReference) und um welchen Geometrytyp (geometryType) es sich handelt. Mögliche Werte für geometryType: esriGeometry-Point | esriGeometryMultipoint | esriGe-ometryPolyline | esriGeometryPolygon | esriGeometryEnvelope"
+       content:
+        application/json: 
+         example: [{"geometry":{"x":3863729.06233079,"y":5713497.47625301,"spatialReference":{"wkid":31467} } ,"attributes":{}}] 
+         schema: 
+          type: object
+          
+      responses:
+        '200':
+          description: OK
+  
+components:
+  schemas:
+    Schema:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+  securitySchemes:
+    ApiKey:
+     type: apiKey
+     name: Authorization
+     in: header
